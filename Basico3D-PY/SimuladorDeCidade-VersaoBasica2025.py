@@ -219,7 +219,7 @@ def DesenhaLadrilhoTEX(id_textura):
     glEnd()
 
     # Deasabilita a textura
-    TEX.UseTexture(-1)
+    TEX.UseTexture(1)
 
 
 # **********************************************************************
@@ -282,7 +282,7 @@ def DesenhaCidade(QtdX, QtdZ):
             if celula.tipo == RUA:
                 DesenhaLadrilhoTEX(2)  # Usa a textura de rua (ajuste o índice se necessário)
             else:
-                DesenhaLadrilho(White, celula.cor_do_piso)
+                DesenhaLadrilhoTEX(1)
                 if celula.tipo == PREDIO:
                     glPushMatrix()              
                     DesenhaPredio(celula.altura)
