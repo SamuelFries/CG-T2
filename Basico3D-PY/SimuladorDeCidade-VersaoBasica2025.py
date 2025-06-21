@@ -173,8 +173,8 @@ def init():
 
     TEX.LoadTexture("bricks.jpg") # esta serah a textura 0
     TEX.LoadTexture("Piso.jpg")   # esta serah a textura 1
+    TEX.LoadTexture("Asfalto.jpg") # esta serah a textura 2
 
-    TEX.UseTexture (-1) # desabilita o uso de textura, inicialmente
 
     #image = Image.open("Tex.png")
     #print ("X:", image.size[0])
@@ -272,20 +272,21 @@ def DesenhaLadrilho(corBorda, corDentro):
 #
 # **********************************************************************  
 def DesenhaCidade(QtdX, QtdZ):
-    ALE.seed(100)  # usa uma semente fixa para gerar sempre as mesmas cores no piso
+    ALE.seed(100)
     glPushMatrix()
 
     for x in range(QtdX):
         glPushMatrix()
         for z in range(QtdZ):
             celula = Cidade[z][x]
-            DesenhaLadrilho(White, celula.cor_do_piso)
-            # Se for prédio, desenha o prédio com altura
-            if celula.tipo == PREDIO:
-                glPushMatrix()
-                # Centraliza o prédio na célula e posiciona na altura correta
-                DesenhaPredio(celula.altura)
-                glPopMatrix()
+            if celula.tipo == RUA:
+                DesenhaLadrilhoTEX(2)  # Usa a textura de rua (ajuste o índice se necessário)
+            else:
+                DesenhaLadrilho(White, celula.cor_do_piso)
+                if celula.tipo == PREDIO:
+                    glPushMatrix()              
+                    DesenhaPredio(celula.altura)
+                    glPopMatrix()
             glTranslated(0, 0, 1)
         glPopMatrix()
         glTranslated(1, 0, 0)
