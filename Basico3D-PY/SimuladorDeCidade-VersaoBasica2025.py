@@ -115,7 +115,7 @@ def LeMatrizCidade(nome_arquivo):
                     Cidade[i][j].altura = 0
                 else:
                     Cidade[i][j].tipo = PREDIO
-                    Cidade[i][j].cor_do_piso = Gray  # Ou cor aleatória se quiser
+                    Cidade[i][j].cor_do_piso = (ALE.random(), ALE.random(), ALE.random())
                     Cidade[i][j].altura = valor / 5.0  # Ajuste o divisor para a escala desejada
 
                     
@@ -186,10 +186,11 @@ def init():
 # **********************************************************************
 #
 # **********************************************************************
-def DesenhaPredio(altura):
+def DesenhaPredio(altura, cor):
     glPushMatrix()
-    glTranslatef(0, altura/2, 0)   # Centraliza o prédio na célula (base no piso)
-    glScalef(0.2, altura, 0.2)     # Mantém o prédio fino e com altura proporcional
+    glTranslatef(0, altura/2, 0)
+    glScalef(0.2, altura, 0.2)
+    glColor3f(*cor)  # Define a cor do prédio
     glutSolidCube(1)
     glPopMatrix()
 
@@ -219,7 +220,7 @@ def DesenhaLadrilhoTEX(id_textura):
     glEnd()
 
     # Deasabilita a textura
-    TEX.UseTexture(1)
+    TEX.UseTexture(-1)
 
 
 # **********************************************************************
@@ -284,8 +285,8 @@ def DesenhaCidade(QtdX, QtdZ):
             else:
                 DesenhaLadrilhoTEX(1)
                 if celula.tipo == PREDIO:
-                    glPushMatrix()              
-                    DesenhaPredio(celula.altura)
+                    glPushMatrix()
+                    DesenhaPredio(celula.altura, celula.cor_do_piso)
                     glPopMatrix()
             glTranslated(0, 0, 1)
         glPopMatrix()
