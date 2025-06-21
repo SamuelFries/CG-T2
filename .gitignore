@@ -1,0 +1,33 @@
+# Ambiente virtual
+.venv/
+
+# Bytecode Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Arquivos de log e cache
+*.log
+*.pot
+*.pyc
+*.pyo
+
+# VS Code
+.vscode/
+
+# Arquivos de sistema (macOS)
+.DS_Store
+
+# Arquivos temporários de edição
+*.swp
+*.swo
+*~
+
+# Backup
+*.bak
+*.tmp
+
+# Dados pessoais ou gerados
+*.sqlite3
+*.db
+.env
