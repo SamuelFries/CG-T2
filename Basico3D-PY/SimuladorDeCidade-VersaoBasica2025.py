@@ -108,18 +108,15 @@ def LeMatrizCidade(nome_arquivo):
         for i, linha in enumerate(linhas):
             valores = linha.strip().split()
             for j, val in enumerate(valores):
-                Cidade[i][j].tipo = int(val)
-                # Ajuste as cores conforme o tipo, se desejar
-                if Cidade[i][j].tipo == VAZIO:
-                    Cidade[i][j].cor_do_piso = White
-                elif Cidade[i][j].tipo == PREDIO:
-                    Cidade[i][j].cor_do_piso = Gray
-                elif Cidade[i][j].tipo == RUA:
+                valor = int(val)
+                if valor == 0:
+                    Cidade[i][j].tipo = RUA
                     Cidade[i][j].cor_do_piso = Black
-                elif Cidade[i][j].tipo == COMBUSTIVEL:
-                    Cidade[i][j].cor_do_piso = Yellow
-                elif Cidade[i][j].tipo == VEICULO:
-                    Cidade[i][j].cor_do_piso = Red
+                    Cidade[i][j].altura = 0
+                else:
+                    Cidade[i][j].tipo = PREDIO
+                    Cidade[i][j].cor_do_piso = Gray  # Ou cor aleatória se quiser
+                    Cidade[i][j].altura = valor / 5.0  # Ajuste o divisor para a escala desejada
 
                     
 # **********************************************************************
@@ -191,16 +188,9 @@ def init():
 # **********************************************************************
 def DesenhaPredio(altura):
     glPushMatrix()
-    
-    # Aplica escala para transformar o cubo em um prédio
-    glScalef(0.2, altura, 0.2)
-    
-    # Move para cima (para alinhar a base do prédio na célula)
-    glTranslatef(0, 1, 0)
-
-    # Desenha um cubo sólido representando o prédio
+    glTranslatef(0, altura/2, 0)   # Centraliza o prédio na célula (base no piso)
+    glScalef(0.2, altura, 0.2)     # Mantém o prédio fino e com altura proporcional
     glutSolidCube(1)
-
     glPopMatrix()
 
 # **********************************************************************
@@ -282,18 +272,21 @@ def DesenhaLadrilho(corBorda, corDentro):
 #
 # **********************************************************************  
 def DesenhaCidade(QtdX, QtdZ):
-    
     ALE.seed(100)  # usa uma semente fixa para gerar sempre as mesmas cores no piso
     glPushMatrix()
 
     for x in range(QtdX):
         glPushMatrix()
         for z in range(QtdZ):
-            DesenhaLadrilho(White, Cidade[z][x].cor_do_piso)
+            celula = Cidade[z][x]
+            DesenhaLadrilho(White, celula.cor_do_piso)
+            # Se for prédio, desenha o prédio com altura
+            if celula.tipo == PREDIO:
+                glPushMatrix()
+                # Centraliza o prédio na célula e posiciona na altura correta
+                DesenhaPredio(celula.altura)
+                glPopMatrix()
             glTranslated(0, 0, 1)
-        
-        # Aqui, os predios devem ser desenhados
-        
         glPopMatrix()
         glTranslated(1, 0, 0)
 
