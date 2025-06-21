@@ -94,18 +94,34 @@ def ImprimeCidade():
 # a cidade
 # **********************************************************************
 def InicializaCidade(qtd_x, qtd_z):
-    global Cidade
-    ALE.seed(100)
-    for i in range(qtd_z):
-        for j in range(qtd_x):
-            # A cor do piso é aleatória (como no código original)
-            Cidade[i][j].cor_do_piso = ALE.randint(0, 39) 
-            Cidade[i][j].cor_do_objeto = White
-            Cidade[i][j].tipo = VAZIO
-    #ImprimeCidade()
+      LeMatrizCidade("cidade.txt")
+            #ImprimeCidade()
     
     #Cidade[2][19].cor_do_piso = Black
 
+def LeMatrizCidade(nome_arquivo):
+    global Cidade, QtdX, QtdZ
+    with open(nome_arquivo, "r") as f:
+        linhas = f.readlines()
+        QtdZ = len(linhas)
+        QtdX = len(linhas[0].split())
+        for i, linha in enumerate(linhas):
+            valores = linha.strip().split()
+            for j, val in enumerate(valores):
+                Cidade[i][j].tipo = int(val)
+                # Ajuste as cores conforme o tipo, se desejar
+                if Cidade[i][j].tipo == VAZIO:
+                    Cidade[i][j].cor_do_piso = White
+                elif Cidade[i][j].tipo == PREDIO:
+                    Cidade[i][j].cor_do_piso = Gray
+                elif Cidade[i][j].tipo == RUA:
+                    Cidade[i][j].cor_do_piso = Black
+                elif Cidade[i][j].tipo == COMBUSTIVEL:
+                    Cidade[i][j].cor_do_piso = Yellow
+                elif Cidade[i][j].tipo == VEICULO:
+                    Cidade[i][j].cor_do_piso = Red
+
+                    
 # **********************************************************************
 # def posiciona_em_terceira_pessoa():
 #   Este método posiciona o observador fora do cenário, olhando para o
