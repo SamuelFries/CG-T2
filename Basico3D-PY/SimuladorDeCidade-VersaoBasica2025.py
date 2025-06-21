@@ -109,14 +109,32 @@ def LeMatrizCidade(nome_arquivo):
             valores = linha.strip().split()
             for j, val in enumerate(valores):
                 valor = int(val)
-                if valor == 0:
+                if valor >= PREDIO and valor < RUA:
+                    Cidade[i][j].tipo = PREDIO
+                    Cidade[i][j].cor_do_piso = (
+                        ALE.uniform(0.5, 1.0),
+                        ALE.uniform(0.5, 1.0),
+                        ALE.uniform(0.5, 1.0)
+                    )
+                    
+                    Cidade[i][j].altura = (valor - PREDIO) + 2.0  # altura mínima 2.0, por exemplo
+                elif valor == RUA:
                     Cidade[i][j].tipo = RUA
                     Cidade[i][j].cor_do_piso = Black
                     Cidade[i][j].altura = 0
+                
+                elif valor == COMBUSTIVEL:
+                    Cidade[i][j].tipo = COMBUSTIVEL
+                    Cidade[i][j].cor_do_piso = Yellow
+                    Cidade[i][j].altura = 0
+                elif valor == VEICULO:
+                    Cidade[i][j].tipo = VEICULO
+                    Cidade[i][j].cor_do_piso = Red
+                    Cidade[i][j].altura = 0
                 else:
-                    Cidade[i][j].tipo = PREDIO
-                    Cidade[i][j].cor_do_piso = (ALE.random(), ALE.random(), ALE.random())
-                    Cidade[i][j].altura = valor / 5.0  # Ajuste o divisor para a escala desejada
+                    Cidade[i][j].tipo = VAZIO
+                    Cidade[i][j].cor_do_piso = White
+                    Cidade[i][j].altura = 0
 
                     
 # **********************************************************************
