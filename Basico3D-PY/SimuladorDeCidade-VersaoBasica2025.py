@@ -117,7 +117,7 @@ def LeMatrizCidade(nome_arquivo):
                         ALE.uniform(0.5, 1.0)
                     )
                     
-                    Cidade[i][j].altura = (valor - PREDIO) + 2.0  # altura mínima 2.0, por exemplo
+                    Cidade[i][j].altura = 5.0
                 elif valor == RUA:
                     Cidade[i][j].tipo = RUA
                     Cidade[i][j].cor_do_piso = Black
@@ -246,17 +246,7 @@ def DesenhaLadrilhoTEX(id_textura):
 # **********************************************************************
 def DesenhaPoligonosComTextura():
 
-    glPushMatrix()
-    glTranslate(QtdX*0.2,1, QtdZ*0.8)
-    glRotatef(Angulo,1,0,0)
-    DesenhaLadrilhoTEX(0)    
-    glPopMatrix()
-
-    glPushMatrix()
-    glTranslate(QtdX*0.6,1,QtdZ*0.8)
-    glRotatef(45,1,0,0)
-    DesenhaLadrilhoTEX(1)    
-    glPopMatrix()
+    pass #Não desenha nada 
 
 # **********************************************************************
 # void DesenhaLadrilho(int corBorda, int corDentro)
