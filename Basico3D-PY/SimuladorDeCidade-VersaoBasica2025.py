@@ -117,7 +117,7 @@ def LeMatrizCidade(nome_arquivo):
                         ALE.uniform(0.5, 1.0)
                     )
                     
-                    Cidade[i][j].altura = 5.0
+                    Cidade[i][j].altura = (valor - PREDIO)/2 + 2.0  # altura mínima 2.0, por exemplo
                 elif valor == RUA:
                     Cidade[i][j].tipo = RUA
                     Cidade[i][j].cor_do_piso = Black
