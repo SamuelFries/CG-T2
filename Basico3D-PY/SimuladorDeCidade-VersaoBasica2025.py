@@ -75,6 +75,12 @@ Alvo = Ponto()
 TerceiraPessoa = Ponto()
 PosicaoVeiculo = Ponto()
 
+# Variáveis do veículo
+VeiculoX = 1.0  # Posição X do veículo no grid
+VeiculoZ = 1.0  # Posição Z do veículo no grid
+VeiculoAngulo = 0.0  # Ângulo de rotação do veículo (0=Norte, 90=Leste, 180=Sul, 270=Oeste)
+VelocidadeVeiculo = 0.5  # Velocidade de movimento
+
 ComTextura = 0
 
 
@@ -94,10 +100,8 @@ def ImprimeCidade():
 # a cidade
 # **********************************************************************
 def InicializaCidade(qtd_x, qtd_z):
-      LeMatrizCidade("cidade.txt")
-            #ImprimeCidade()
-    
-    #Cidade[2][19].cor_do_piso = Black
+    LeMatrizCidade("Cidade.txt")
+    #ImprimeCidade()
 
 def LeMatrizCidade(nome_arquivo):
     global Cidade, QtdX, QtdZ
@@ -116,24 +120,27 @@ def LeMatrizCidade(nome_arquivo):
                         ALE.uniform(0.5, 1.0),
                         ALE.uniform(0.5, 1.0)
                     )
-                    
-                    Cidade[i][j].altura = (valor - PREDIO)/2 + 2.0  # altura mínima 2.0, por exemplo
+                    if valor < 17:
+                        Cidade[i][j].altura = 0  # Sem prédio
+                    else:
+                        Cidade[i][j].altura = (valor - PREDIO) / 4 + 2.0 # altura mínima 2.0, por exemplo
+
                 elif valor == RUA:
                     Cidade[i][j].tipo = RUA
-                    Cidade[i][j].cor_do_piso = Black
+                    Cidade[i][j].cor_do_piso = (0,0,0)  # Black
                     Cidade[i][j].altura = 0
                 
                 elif valor == COMBUSTIVEL:
                     Cidade[i][j].tipo = COMBUSTIVEL
-                    Cidade[i][j].cor_do_piso = Yellow
+                    Cidade[i][j].cor_do_piso = (1,1,0)  # Yellow
                     Cidade[i][j].altura = 0
                 elif valor == VEICULO:
                     Cidade[i][j].tipo = VEICULO
-                    Cidade[i][j].cor_do_piso = Red
+                    Cidade[i][j].cor_do_piso = (1,0,0)  # Red
                     Cidade[i][j].altura = 0
                 else:
                     Cidade[i][j].tipo = VAZIO
-                    Cidade[i][j].cor_do_piso = White
+                    Cidade[i][j].cor_do_piso = (1,1,1)  # White
                     Cidade[i][j].altura = 0
 
                     
@@ -179,13 +186,26 @@ def init():
     QtdX = 20
     QtdZ = 20
 
-    InicializaCidade(QtdX, QtdZ)
-
-    # ImprimeCidade()
+    InicializaCidade(QtdX, QtdZ)    # ImprimeCidade()
 
     # Define a posição do observador e do veículo com base no tamanho do mapa
     TerceiraPessoa = Ponto(QtdX / 2, 10, QtdZ * 1.1)
     PosicaoVeiculo = Ponto(QtdX / 2, 0, QtdZ / 2)
+
+    # Inicializa a posição do veículo em uma rua válida
+    # Procura uma posição inicial válida (rua)
+    for i in range(QtdZ):
+        for j in range(QtdX):
+            if Cidade[i][j].tipo == RUA:
+                VeiculoX = j + 0.5  # Centro da célula
+                VeiculoZ = i + 0.5  # Centro da célula
+                VeiculoAngulo = 0.0  # Olhando para o norte
+                PosicaoVeiculo.x = VeiculoX
+                PosicaoVeiculo.z = VeiculoZ
+                break
+        else:
+            continue
+        break
 
     posiciona_em_terceira_pessoa()
 
@@ -334,7 +354,7 @@ def DefineLuz():
     # Define a reflectancia do material
     glMaterialfv(GL_FRONT,GL_SPECULAR, Especularidade)
 
-    # Define a concentraÃ§Ã£oo do brilho.
+    # Define a concentraÃ§Ã£o do brilho.
     # Quanto maior o valor do Segundo parametro, mais
     # concentrado sera o brilho. (Valores validos: de 0 a 128)
     glMateriali(GL_FRONT,GL_SHININESS,51)
@@ -479,11 +499,14 @@ def display():
 
     DefineLuz()
     PosicUser()
-
-    glMatrixMode(GL_MODELVIEW) 
-   
+    glMatrixMode(GL_MODELVIEW)
+    
     glPushMatrix()
     DesenhaCidade(QtdX,QtdZ)
+    glPopMatrix()
+
+    glPushMatrix()
+    DesenhaVeiculo()
     glPopMatrix()
 
     glPushMatrix()
@@ -543,18 +566,106 @@ def keyboard(*args):
     glutPostRedisplay()
 
 # **********************************************************************
+# VerificaPosicaoValida()
+# Verifica se uma posição é válida para o veículo (deve ser rua)
+# **********************************************************************
+def VerificaPosicaoValida(x, z):
+    # Verifica se está dentro dos limites do mapa
+    if x < 0 or x >= QtdX or z < 0 or z >= QtdZ:
+        return False
+    
+    # Verifica se a posição é uma rua
+    return Cidade[int(z)][int(x)].tipo == RUA
+
+# **********************************************************************
+# DesenhaVeiculo()
+# Desenha o veículo como um triângulo
+# **********************************************************************
+def DesenhaVeiculo():
+    glPushMatrix()
+    
+    # Move para a posição do veículo
+    glTranslatef(VeiculoX, 0.1, VeiculoZ)  # Altura 0.1 para ficar acima do chão
+    
+    # Rotaciona o veículo baseado no ângulo
+    glRotatef(VeiculoAngulo, 0, 1, 0)
+    
+    # Define a cor do veículo (vermelho)
+    glColor3f(1.0, 0.0, 0.0)  # Vermelho
+    
+    # Desenha um triângulo
+    glBegin(GL_TRIANGLES)
+    glNormal3f(0, 1, 0)
+    glVertex3f(0.0, 0.0, 0.3)    # Frente do veículo
+    glVertex3f(-0.2, 0.0, -0.2)  # Traseira esquerda
+    glVertex3f(0.2, 0.0, -0.2)   # Traseira direita
+    glEnd()
+    
+    glPopMatrix()
+
+# **********************************************************************
+# MoveVeiculo()
+# Move o veículo na direção atual se a posição for válida
+# **********************************************************************
+def MoveVeiculo(direcao):
+    global VeiculoX, VeiculoZ, VeiculoAngulo
+
+    nova_x = VeiculoX
+    nova_z = VeiculoZ
+
+    if direcao == "frente":
+        if VeiculoAngulo == 0:    # Norte
+            nova_z -= VelocidadeVeiculo
+        elif VeiculoAngulo == 90: # Leste
+            nova_x += VelocidadeVeiculo
+        elif VeiculoAngulo == 180: # Sul
+            nova_z += VelocidadeVeiculo
+        elif VeiculoAngulo == 270: # Oeste
+            nova_x -= VelocidadeVeiculo
+    elif direcao == "tras":
+        if VeiculoAngulo == 0:
+            nova_z += VelocidadeVeiculo
+        elif VeiculoAngulo == 90:
+            nova_x -= VelocidadeVeiculo
+        elif VeiculoAngulo == 180:
+            nova_z -= VelocidadeVeiculo
+        elif VeiculoAngulo == 270:
+            nova_x += VelocidadeVeiculo
+
+    # Verifica se a nova posição é válida
+    if VerificaPosicaoValida(nova_x, nova_z):
+        VeiculoX = nova_x
+        VeiculoZ = nova_z
+        PosicaoVeiculo.x = VeiculoX
+        PosicaoVeiculo.z = VeiculoZ
+        posiciona_em_terceira_pessoa()  # <-- Atualiza a câmera
+
+# **********************************************************************
+# RotacionaVeiculo()
+# Rotaciona o veículo para esquerda ou direita
+# **********************************************************************
+def RotacionaVeiculo(direcao):
+    global VeiculoAngulo
+    
+    if direcao == "esquerda":
+        VeiculoAngulo = (VeiculoAngulo - 90) % 360
+    elif direcao == "direita":
+        VeiculoAngulo = (VeiculoAngulo + 90) % 360
+    posiciona_em_terceira_pessoa()  # <-- Atualiza a câmera
+
+# **********************************************************************
 #  arrow_keys ( a_keys: int, x: int, y: int )   
 # **********************************************************************
 
 def arrow_keys(a_keys: int, x: int, y: int):
     if a_keys == GLUT_KEY_UP:         # Se pressionar UP
-        pass
+        MoveVeiculo("frente")
     if a_keys == GLUT_KEY_DOWN:       # Se pressionar DOWN
-        pass
+        MoveVeiculo("tras")
     if a_keys == GLUT_KEY_LEFT:       # Se pressionar LEFT
-        pass
+        RotacionaVeiculo("esquerda")
     if a_keys == GLUT_KEY_RIGHT:      # Se pressionar RIGHT
-        pass
+        RotacionaVeiculo("direita")
 
     glutPostRedisplay()
 
