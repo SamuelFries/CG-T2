@@ -32,6 +32,7 @@ from ListaDeCoresRGB import *
 import Texture as TEX
 
 #from PIL import Image
+import math
 import time
 import random as ALE
 
@@ -79,7 +80,8 @@ PosicaoVeiculo = Ponto()
 VeiculoX = 1.0  # Posição X do veículo no grid
 VeiculoZ = 1.0  # Posição Z do veículo no grid
 VeiculoAngulo = 0.0  # Ângulo de rotação do veículo (0=Norte, 90=Leste, 180=Sul, 270=Oeste)
-VelocidadeVeiculo = 0.5  # Velocidade de movimento
+VelocidadeVeiculo = 0.1  # Velocidade de movimento
+VeiculoEmMovimento = False  # Controla se o veículo está se movendo automaticamente
 
 ComTextura = 0
 
@@ -460,17 +462,21 @@ def DesenhaEm2D():
 
     # Desenha linha que divide as áreas 2D e 3D
     defineCor(GreenCopper)
-    glLineWidth(15)
+    glLineWidth(10)
     glBegin(GL_LINES)
-    glVertex2f(0, 10)
-    glVertex2f(10, 10)
+    glVertex2f(0, 3)
+    glVertex2f(10, 3)
     glEnd()
 
-    PrintString("Esta area eh destinada a mensagens de texto. Veja a funcao DesenhaEm2D", 0, 8, White)
+    # PrintString("Esta area eh destinada a mensagens de texto. Veja a funcao DesenhaEm2D", 0, 8, White)
 
-    PrintString("Amarelo", 0, 0, Yellow)
-    PrintString("Vermelho", 4, 2, Red)
-    PrintString("Verde", 5, 4, Green)
+    PrintString("Gasolina", 0, 0, Orange)  # Orange
+    PrintString("100", 2, 0, Orange)  # Orange
+    
+    # Status do veículo
+    status = "Movendo" if VeiculoEmMovimento else "Parado"
+    PrintString(f"Veiculo: {status}", 0, 2, Orange)  # Orange
+    PrintString("Espaco: Liga/Desliga movimento", 0, 1, Orange)  # Orange
 
     # Restaura os parâmetros que foram alterados
     glMatrixMode(GL_PROJECTION)
@@ -543,6 +549,7 @@ def animate():
     
     if AccumDeltaT > 1.0/30:  # fixa a atualizacao da tela em 30
         AccumDeltaT = 0
+        AtualizaMovimentoVeiculo()  # Atualiza o movimento do veículo
         glutPostRedisplay()
 
 
@@ -561,6 +568,9 @@ def keyboard(*args):
 
     if args[0] == b't' :
         ComTextura = 1 - ComTextura
+
+    if args[0] == b' ':  # Barra de espaço
+        AlternaMovimentoVeiculo()
 
     # ForÃ§a o redesenho da tela
     glutPostRedisplay()
@@ -583,24 +593,64 @@ def VerificaPosicaoValida(x, z):
 # **********************************************************************
 def DesenhaVeiculo():
     glPushMatrix()
-    
-    # Move para a posição do veículo
     glTranslatef(VeiculoX, 0.1, VeiculoZ)  # Altura 0.1 para ficar acima do chão
-    
-    # Rotaciona o veículo baseado no ângulo
     glRotatef(VeiculoAngulo, 0, 1, 0)
-    
-    # Define a cor do veículo (vermelho)
     glColor3f(1.0, 0.0, 0.0)  # Vermelho
-    
-    # Desenha um triângulo
-    glBegin(GL_TRIANGLES)
-    glNormal3f(0, 1, 0)
-    glVertex3f(0.0, 0.0, 0.3)    # Frente do veículo
-    glVertex3f(-0.2, 0.0, -0.2)  # Traseira esquerda
-    glVertex3f(0.2, 0.0, -0.2)   # Traseira direita
+
+    # Corpo da seta (base do prisma)
+    glBegin(GL_QUADS)
+    # Base inferior
+    glVertex3f(-0.1, 0.0, -0.15)
+    glVertex3f( 0.1, 0.0, -0.15)
+    glVertex3f( 0.1, 0.0,  0.15)
+    glVertex3f(-0.1, 0.0,  0.15)
+    # Base superior
+    glVertex3f(-0.1, 0.1, -0.15)
+    glVertex3f( 0.1, 0.1, -0.15)
+    glVertex3f( 0.1, 0.1,  0.15)
+    glVertex3f(-0.1, 0.1,  0.15)
+    # Lados
+    glVertex3f(-0.1, 0.0, -0.15)
+    glVertex3f(-0.1, 0.1, -0.15)
+    glVertex3f(-0.1, 0.1,  0.15)
+    glVertex3f(-0.1, 0.0,  0.15)
+
+    glVertex3f(0.1, 0.0, -0.15)
+    glVertex3f(0.1, 0.1, -0.15)
+    glVertex3f(0.1, 0.1,  0.15)
+    glVertex3f(0.1, 0.0,  0.15)
+
+    glVertex3f(-0.1, 0.0, -0.15)
+    glVertex3f( 0.1, 0.0, -0.15)
+    glVertex3f( 0.1, 0.1, -0.15)
+    glVertex3f(-0.1, 0.1, -0.15)
+
+    glVertex3f(-0.1, 0.0, 0.15)
+    glVertex3f( 0.1, 0.0, 0.15)
+    glVertex3f( 0.1, 0.1, 0.15)
+    glVertex3f(-0.1, 0.1, 0.15)
     glEnd()
-    
+
+    # Ponta da seta (pirâmide)
+    glBegin(GL_TRIANGLES)
+    # Frente
+    glVertex3f( 0.0, 0.15, 0.35)  # ponta superior
+    glVertex3f(-0.15, 0.0, 0.15)
+    glVertex3f( 0.15, 0.0, 0.15)
+    # Lado esquerdo
+    glVertex3f( 0.0, 0.15, 0.35)
+    glVertex3f(-0.1, 0.0, -0.15)
+    glVertex3f(-0.15, 0.0, 0.15)
+    # Lado direito
+    glVertex3f( 0.0, 0.15, 0.35)
+    glVertex3f( 0.1, 0.0, -0.15)
+    glVertex3f( 0.15, 0.0, 0.15)
+    # Base traseira
+    glVertex3f( 0.0, 0.15, 0.35)
+    glVertex3f(-0.1, 0.0, -0.15)
+    glVertex3f( 0.1, 0.0, -0.15)
+    glEnd()
+
     glPopMatrix()
 
 # **********************************************************************
@@ -610,27 +660,18 @@ def DesenhaVeiculo():
 def MoveVeiculo(direcao):
     global VeiculoX, VeiculoZ, VeiculoAngulo
 
-    nova_x = VeiculoX
-    nova_z = VeiculoZ
+    ang_rad = math.radians(VeiculoAngulo)
+    dx = math.sin(ang_rad)
+    dz = -math.cos(ang_rad)
 
     if direcao == "frente":
-        if VeiculoAngulo == 0:    # Norte
-            nova_z -= VelocidadeVeiculo
-        elif VeiculoAngulo == 90: # Leste
-            nova_x += VelocidadeVeiculo
-        elif VeiculoAngulo == 180: # Sul
-            nova_z += VelocidadeVeiculo
-        elif VeiculoAngulo == 270: # Oeste
-            nova_x -= VelocidadeVeiculo
+        nova_x = VeiculoX + dx * VelocidadeVeiculo
+        nova_z = VeiculoZ + dz * VelocidadeVeiculo
     elif direcao == "tras":
-        if VeiculoAngulo == 0:
-            nova_z += VelocidadeVeiculo
-        elif VeiculoAngulo == 90:
-            nova_x -= VelocidadeVeiculo
-        elif VeiculoAngulo == 180:
-            nova_z -= VelocidadeVeiculo
-        elif VeiculoAngulo == 270:
-            nova_x += VelocidadeVeiculo
+        nova_x = VeiculoX - dx * VelocidadeVeiculo
+        nova_z = VeiculoZ - dz * VelocidadeVeiculo
+    else:
+        nova_x, nova_z = VeiculoX, VeiculoZ
 
     # Verifica se a nova posição é válida
     if VerificaPosicaoValida(nova_x, nova_z):
@@ -638,7 +679,7 @@ def MoveVeiculo(direcao):
         VeiculoZ = nova_z
         PosicaoVeiculo.x = VeiculoX
         PosicaoVeiculo.z = VeiculoZ
-        posiciona_em_terceira_pessoa()  # <-- Atualiza a câmera
+        posiciona_em_terceira_pessoa()  # Atualiza a câmera
 
 # **********************************************************************
 # RotacionaVeiculo()
@@ -658,10 +699,10 @@ def RotacionaVeiculo(direcao):
 # **********************************************************************
 
 def arrow_keys(a_keys: int, x: int, y: int):
-    if a_keys == GLUT_KEY_UP:         # Se pressionar UP
-        MoveVeiculo("frente")
-    if a_keys == GLUT_KEY_DOWN:       # Se pressionar DOWN
-        MoveVeiculo("tras")
+    #if a_keys == GLUT_KEY_UP:         # Se pressionar UP
+    #    MoveVeiculo("frente")
+    #if a_keys == GLUT_KEY_DOWN:       # Se pressionar DOWN
+    #    MoveVeiculo("tras")
     if a_keys == GLUT_KEY_LEFT:       # Se pressionar LEFT
         RotacionaVeiculo("esquerda")
     if a_keys == GLUT_KEY_RIGHT:      # Se pressionar RIGHT
@@ -674,6 +715,22 @@ def mouse(button: int, state: int, x: int, y: int):
 
 def mouseMove(x: int, y: int):
     glutPostRedisplay()
+
+# **********************************************************************
+# AlternaMovimentoVeiculo()
+# Liga/desliga o movimento automático do veículo
+# **********************************************************************
+def AlternaMovimentoVeiculo():
+    global VeiculoEmMovimento
+    VeiculoEmMovimento = not VeiculoEmMovimento
+
+# **********************************************************************
+# AtualizaMovimentoVeiculo()
+# Atualiza a posição do veículo se estiver em movimento
+# **********************************************************************
+def AtualizaMovimentoVeiculo():
+    if VeiculoEmMovimento:
+        MoveVeiculo("frente")
 
 # ***********************************************************************************
 # Programa Principal
