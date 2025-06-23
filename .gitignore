@@ -30,4 +30,4 @@ __pycache__/
 # Dados pessoais ou gerados
 *.sqlite3
 *.db
-.env
+.env.DS_Store

@@ -94,18 +94,49 @@ def ImprimeCidade():
 # a cidade
 # **********************************************************************
 def InicializaCidade(qtd_x, qtd_z):
-    global Cidade
-    ALE.seed(100)
-    for i in range(qtd_z):
-        for j in range(qtd_x):
-            # A cor do piso é aleatória (como no código original)
-            Cidade[i][j].cor_do_piso = ALE.randint(0, 39) 
-            Cidade[i][j].cor_do_objeto = White
-            Cidade[i][j].tipo = VAZIO
-    #ImprimeCidade()
+      LeMatrizCidade("cidade.txt")
+            #ImprimeCidade()
     
     #Cidade[2][19].cor_do_piso = Black
 
+def LeMatrizCidade(nome_arquivo):
+    global Cidade, QtdX, QtdZ
+    with open(nome_arquivo, "r") as f:
+        linhas = f.readlines()
+        QtdZ = len(linhas)
+        QtdX = len(linhas[0].split())
+        for i, linha in enumerate(linhas):
+            valores = linha.strip().split()
+            for j, val in enumerate(valores):
+                valor = int(val)
+                if valor >= PREDIO and valor < RUA:
+                    Cidade[i][j].tipo = PREDIO
+                    Cidade[i][j].cor_do_piso = (
+                        ALE.uniform(0.5, 1.0),
+                        ALE.uniform(0.5, 1.0),
+                        ALE.uniform(0.5, 1.0)
+                    )
+                    
+                    Cidade[i][j].altura = (valor - PREDIO)/2 + 2.0  # altura mínima 2.0, por exemplo
+                elif valor == RUA:
+                    Cidade[i][j].tipo = RUA
+                    Cidade[i][j].cor_do_piso = Black
+                    Cidade[i][j].altura = 0
+                
+                elif valor == COMBUSTIVEL:
+                    Cidade[i][j].tipo = COMBUSTIVEL
+                    Cidade[i][j].cor_do_piso = Yellow
+                    Cidade[i][j].altura = 0
+                elif valor == VEICULO:
+                    Cidade[i][j].tipo = VEICULO
+                    Cidade[i][j].cor_do_piso = Red
+                    Cidade[i][j].altura = 0
+                else:
+                    Cidade[i][j].tipo = VAZIO
+                    Cidade[i][j].cor_do_piso = White
+                    Cidade[i][j].altura = 0
+
+                    
 # **********************************************************************
 # def posiciona_em_terceira_pessoa():
 #   Este método posiciona o observador fora do cenário, olhando para o
@@ -160,8 +191,8 @@ def init():
 
     TEX.LoadTexture("bricks.jpg") # esta serah a textura 0
     TEX.LoadTexture("Piso.jpg")   # esta serah a textura 1
+    TEX.LoadTexture("Asfalto.jpg") # esta serah a textura 2
 
-    TEX.UseTexture (-1) # desabilita o uso de textura, inicialmente
 
     #image = Image.open("Tex.png")
     #print ("X:", image.size[0])
@@ -173,18 +204,12 @@ def init():
 # **********************************************************************
 #
 # **********************************************************************
-def DesenhaPredio(altura):
+def DesenhaPredio(altura, cor):
     glPushMatrix()
-    
-    # Aplica escala para transformar o cubo em um prédio
+    glTranslatef(0, altura/2, 0)
     glScalef(0.2, altura, 0.2)
-    
-    # Move para cima (para alinhar a base do prédio na célula)
-    glTranslatef(0, 1, 0)
-
-    # Desenha um cubo sólido representando o prédio
+    glColor3f(*cor)  # Define a cor do prédio
     glutSolidCube(1)
-
     glPopMatrix()
 
 # **********************************************************************
@@ -221,17 +246,7 @@ def DesenhaLadrilhoTEX(id_textura):
 # **********************************************************************
 def DesenhaPoligonosComTextura():
 
-    glPushMatrix()
-    glTranslate(QtdX*0.2,1, QtdZ*0.8)
-    glRotatef(Angulo,1,0,0)
-    DesenhaLadrilhoTEX(0)    
-    glPopMatrix()
-
-    glPushMatrix()
-    glTranslate(QtdX*0.6,1,QtdZ*0.8)
-    glRotatef(45,1,0,0)
-    DesenhaLadrilhoTEX(1)    
-    glPopMatrix()
+    pass #Não desenha nada 
 
 # **********************************************************************
 # void DesenhaLadrilho(int corBorda, int corDentro)
@@ -266,18 +281,22 @@ def DesenhaLadrilho(corBorda, corDentro):
 #
 # **********************************************************************  
 def DesenhaCidade(QtdX, QtdZ):
-    
-    ALE.seed(100)  # usa uma semente fixa para gerar sempre as mesmas cores no piso
+    ALE.seed(100)
     glPushMatrix()
 
     for x in range(QtdX):
         glPushMatrix()
         for z in range(QtdZ):
-            DesenhaLadrilho(White, Cidade[z][x].cor_do_piso)
+            celula = Cidade[z][x]
+            if celula.tipo == RUA:
+                DesenhaLadrilhoTEX(2)  # Usa a textura de rua (ajuste o índice se necessário)
+            else:
+                DesenhaLadrilhoTEX(1)
+                if celula.tipo == PREDIO:
+                    glPushMatrix()
+                    DesenhaPredio(celula.altura, celula.cor_do_piso)
+                    glPopMatrix()
             glTranslated(0, 0, 1)
-        
-        # Aqui, os predios devem ser desenhados
-        
         glPopMatrix()
         glTranslated(1, 0, 0)
 
