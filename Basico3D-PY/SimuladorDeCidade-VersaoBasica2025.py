@@ -84,6 +84,9 @@ VeiculoDirecao = 0.0  # Direção de movimento (pode ser diferente da orientaç�
 VelocidadeVeiculo = 0.1  # Velocidade de movimento
 VeiculoEmMovimento = False  # Controla se o veículo está se movendo automaticamente
 
+# Variável para controlar o modo de câmera
+ModoCameraPrimeiraPessoa = False  # False = terceira pessoa, True = primeira pessoa
+
 ComTextura = 0
 
 
@@ -156,9 +159,40 @@ def LeMatrizCidade(nome_arquivo):
 def posiciona_em_terceira_pessoa():
     global Observador, Alvo
     Observador = Ponto(TerceiraPessoa.x, TerceiraPessoa.y, TerceiraPessoa.z)  # Posiciona observador
-    Alvo = Ponto(PosicaoVeiculo.x, PosicaoVeiculo.y, PosicaoVeiculo.z)        # Define alvo como o veículo
+    Alvo = Ponto(PosicaoVeiculo.x, PosicaoVeiculo.y, PosicaoVeiculo.z)        # Define alvo como o veículo    Alvo.imprime("Posiciona - Veiculo:") 
 
-    Alvo.imprime("Posiciona - Veiculo:") 
+# **********************************************************************
+# def posiciona_em_primeira_pessoa():
+#   Este método posiciona o observador dentro do veículo, olhando na
+#   direção para onde o veículo está apontando
+# **********************************************************************
+def posiciona_em_primeira_pessoa():
+    global Observador, Alvo
+    
+    # Altura da câmera dentro do veículo
+    altura_camera = 0.5
+    
+    # Posição do observador (dentro do veículo)
+    Observador = Ponto(VeiculoX, altura_camera, VeiculoZ)
+    
+    # Calcula o ponto para onde a câmera deve olhar baseado na direção do veículo
+    ang_rad = math.radians(VeiculoAngulo)
+    distancia_alvo = 10.0  # Distância à frente do veículo para olhar
+    
+    alvo_x = VeiculoX + math.sin(ang_rad) * distancia_alvo
+    alvo_z = VeiculoZ - math.cos(ang_rad) * distancia_alvo
+    
+    Alvo = Ponto(alvo_x, altura_camera, alvo_z)
+
+# **********************************************************************
+# def posiciona_camera():
+#   Posiciona a câmera baseado no modo atual (primeira ou terceira pessoa)
+# **********************************************************************
+def posiciona_camera():
+    if ModoCameraPrimeiraPessoa:
+        posiciona_em_primeira_pessoa()
+    else:
+        posiciona_em_terceira_pessoa()
     
       
 # **********************************************************************
@@ -169,6 +203,7 @@ def init():
     global QtdX, QtdZ
     global TerceiraPessoa, PosicaoVeiculo
     global AnguloDeVisao
+    global VeiculoAngulo
 
     glClearColor(0.0, 0.0, 1.0, 1.0)  # Fundo de tela amarelo
     
@@ -202,15 +237,14 @@ def init():
             if Cidade[i][j].tipo == RUA:
                 VeiculoX = j + 0.5  # Centro da célula
                 VeiculoZ = i + 0.5  # Centro da célula
-                VeiculoAngulo = 0.0  # Olhando para o norte
-                PosicaoVeiculo.x = VeiculoX
+                VeiculoAngulo = 0.0  # Olhando para o norte                PosicaoVeiculo.x = VeiculoX
                 PosicaoVeiculo.z = VeiculoZ
                 break
         else:
             continue
         break
 
-    posiciona_em_terceira_pessoa()
+    posiciona_camera()
 
     TEX.LoadTexture("bricks.jpg") # esta serah a textura 0
     TEX.LoadTexture("Piso.jpg")   # esta serah a textura 1
@@ -560,7 +594,7 @@ def animate():
 # **********************************************************************
 ESCAPE = b'\x1b'
 def keyboard(*args):
-    global image, ComTextura
+    global image, ComTextura, ModoCameraPrimeiraPessoa
     #print (args)
     # If escape is pressed, kill everything.
 
@@ -572,6 +606,10 @@ def keyboard(*args):
 
     if args[0] == b' ':  # Barra de espaço
         AlternaMovimentoVeiculo()
+
+    if args[0] == b'c':  # Tecla 'c' para alternar modo de câmera
+        ModoCameraPrimeiraPessoa = not ModoCameraPrimeiraPessoa
+        posiciona_camera()
 
     # ForÃ§a o redesenho da tela
     glutPostRedisplay()
@@ -679,7 +717,7 @@ def MoveVeiculo(direcao):
         VeiculoZ = nova_z
         PosicaoVeiculo.x = VeiculoX
         PosicaoVeiculo.z = VeiculoZ
-        posiciona_em_terceira_pessoa()
+        posiciona_camera()
 
 def RotacionaVeiculo(direcao):
     global VeiculoAngulo
@@ -687,7 +725,7 @@ def RotacionaVeiculo(direcao):
         VeiculoAngulo = (VeiculoAngulo - 90) % 360
     elif direcao == "direita":
         VeiculoAngulo = (VeiculoAngulo + 90) % 360
-    posiciona_em_terceira_pessoa()
+    posiciona_camera()
 
 # **********************************************************************
 #  arrow_keys ( a_keys: int, x: int, y: int )   
