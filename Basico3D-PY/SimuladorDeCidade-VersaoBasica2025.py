@@ -136,20 +136,20 @@ def LeMatrizCidade(nome_arquivo):
 
                 elif valor == RUA:
                     Cidade[i][j].tipo = RUA
-                    Cidade[i][j].cor_do_piso = (0,0,0)  # Black
+                    Cidade[i][j].cor_do_piso = Black
                     Cidade[i][j].altura = 0
                 
                 elif valor == COMBUSTIVEL:
                     Cidade[i][j].tipo = COMBUSTIVEL
-                    Cidade[i][j].cor_do_piso = (1,1,0)  # Yellow
-                    Cidade[i][j].altura = 0
+                    Cidade[i][j].cor_do_piso = Orange
+                    Cidade[i][j].altura = 0.5
                 elif valor == VEICULO:
                     Cidade[i][j].tipo = VEICULO
-                    Cidade[i][j].cor_do_piso = (1,0,0)  # Red
+                    Cidade[i][j].cor_do_piso = Red
                     Cidade[i][j].altura = 0
                 else:
                     Cidade[i][j].tipo = VAZIO
-                    Cidade[i][j].cor_do_piso = (1,1,1)  # White
+                    Cidade[i][j].cor_do_piso = White
                     Cidade[i][j].altura = 0
 
                     
@@ -350,6 +350,11 @@ def DesenhaCidade(QtdX, QtdZ):
             celula = Cidade[z][x]
             if celula.tipo == RUA:
                 DesenhaLadrilhoTEX(2)  # Usa a textura de rua (ajuste o índice se necessário)
+            elif celula.tipo == COMBUSTIVEL:
+                DesenhaLadrilhoTEX(2)
+                glPushMatrix()
+                DesenhaPredio(celula.altura, celula.cor_do_piso)
+                glPopMatrix()
             else:
                 DesenhaLadrilhoTEX(1)
                 if celula.tipo == PREDIO:
@@ -508,10 +513,20 @@ def DesenhaEm2D():
 
     PrintString("Gasolina", 0, 0, Orange)  # Orange
     PrintString(f"{Gasolina:.1f}", 2, 0, Orange)  # Mostra a quantidade atual de gasolina
-    
-    # Status do veículo
+      # Status do veículo
     status = "Movendo" if VeiculoEmMovimento else "Parado"
+    if Gasolina <= 0:
+        status = "Sem combustivel"
     PrintString(f"Veiculo: {status}", 0, 2, Orange)  # Orange
+    
+    # Verifica se está em posto de combustível
+    #pos_x = int(VeiculoX)
+    #pos_z = int(VeiculoZ)
+    #if pos_x >= 0 and pos_x < QtdX and pos_z >= 0 and pos_z < QtdZ:
+    #    if Cidade[pos_z][pos_x].tipo == COMBUSTIVEL:
+    #        PrintString("Em posto de gasolina", 5, 2, Orange)
+    
+    # Instruções
     PrintString("Espaco: Liga/Desliga movimento", 0, 1, Orange)  # Orange
     PrintString("C: Alternar camera", 5, 1, Orange)  # Orange
 
@@ -601,7 +616,9 @@ def keyboard(*args):
     # If escape is pressed, kill everything.
 
     if args[0] == ESCAPE:   # Termina o programa qdo
-        os._exit(0)         # a tecla ESC for pressionada    if args[0] == b't' :
+        os._exit(0)         # a tecla ESC for pressionada
+
+    if args[0] == b't' :
         ComTextura = 1 - ComTextura
 
     if args[0] == b' ':  # Barra de espaço
@@ -718,6 +735,8 @@ def MoveVeiculo(direcao):
         PosicaoVeiculo.x = VeiculoX
         PosicaoVeiculo.z = VeiculoZ
         posiciona_camera()
+        # Verifica se está em posto de combustível e reabastece automaticamente
+        VerificaEReabastece()
 
 def RotacionaVeiculo(direcao):
     global VeiculoAngulo
@@ -755,6 +774,10 @@ def mouseMove(x: int, y: int):
 # **********************************************************************
 def AlternaMovimentoVeiculo():
     global VeiculoEmMovimento
+    # Só permite ligar o movimento se houver combustível
+    if not VeiculoEmMovimento and Gasolina <= 0:
+        print("Sem combustível! Procure um posto de gasolina.")
+        return
     VeiculoEmMovimento = not VeiculoEmMovimento
 
 # **********************************************************************
@@ -775,6 +798,23 @@ def AtualizaMovimentoVeiculo():
         else:
             # Para o veículo se não há mais combustível
             VeiculoEmMovimento = False
+
+# **********************************************************************
+# VerificaEReabastece()
+# Verifica se o veículo está em uma célula de combustível e reabastece automaticamente
+# **********************************************************************
+def VerificaEReabastece():
+    global Gasolina
+    # Verifica a célula atual do veículo
+    pos_x = int(VeiculoX)
+    pos_z = int(VeiculoZ)
+    
+    # Verifica se está dentro dos limites do mapa
+    if pos_x >= 0 and pos_x < QtdX and pos_z >= 0 and pos_z < QtdZ:
+        if Cidade[pos_z][pos_x].tipo == COMBUSTIVEL:
+            if Gasolina < 100.0:  # Só reabastece se não estiver cheio
+                Gasolina = 100.0  # Reabastece completamente
+                print("Veículo reabastecido automaticamente!")
 
 # ***********************************************************************************
 # Programa Principal
