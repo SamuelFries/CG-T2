@@ -35,6 +35,8 @@ import Texture as TEX
 import math
 import time
 import random as ALE
+import sys
+import os
 
 import numpy as np
 from PIL import Image
@@ -136,20 +138,20 @@ def LeMatrizCidade(nome_arquivo):
 
                 elif valor == RUA:
                     Cidade[i][j].tipo = RUA
-                    Cidade[i][j].cor_do_piso = Black
+                    Cidade[i][j].cor_do_piso = (0, 0, 0)
                     Cidade[i][j].altura = 0
                 
                 elif valor == COMBUSTIVEL:
                     Cidade[i][j].tipo = COMBUSTIVEL
-                    Cidade[i][j].cor_do_piso = Orange
+                    Cidade[i][j].cor_do_piso = (1, 1, 0)  # Amarelo
                     Cidade[i][j].altura = 0.5
                 elif valor == VEICULO:
                     Cidade[i][j].tipo = VEICULO
-                    Cidade[i][j].cor_do_piso = Red
+                    Cidade[i][j].cor_do_piso = (1, 0, 0)
                     Cidade[i][j].altura = 0
                 else:
                     Cidade[i][j].tipo = VAZIO
-                    Cidade[i][j].cor_do_piso = White
+                    Cidade[i][j].cor_do_piso = (1, 1, 1)
                     Cidade[i][j].altura = 0
 
                     
@@ -640,8 +642,8 @@ def VerificaPosicaoValida(x, z):
     if x < 0 or x >= QtdX or z < 0 or z >= QtdZ:
         return False
     
-    # Verifica se a posição é uma rua
-    return Cidade[int(z)][int(x)].tipo == RUA
+    # Verifica se a posição é uma rua ou uma célula de combustível
+    return Cidade[int(z)][int(x)].tipo == RUA or Cidade[int(z)][int(x)].tipo == COMBUSTIVEL
 
 # **********************************************************************
 # DesenhaVeiculo()
