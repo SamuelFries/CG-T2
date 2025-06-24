@@ -87,6 +87,9 @@ VeiculoEmMovimento = False  # Controla se o veículo está se movendo automatica
 # Variável para controlar o modo de câmera
 ModoCameraPrimeiraPessoa = False  # False = terceira pessoa, True = primeira pessoa
 
+# Variável para controlar a quantidade de gasolina
+Gasolina = 100.0  # Quantidade inicial de gasolina
+
 ComTextura = 0
 
 
@@ -501,17 +504,16 @@ def DesenhaEm2D():
     glBegin(GL_LINES)
     glVertex2f(0, 3)
     glVertex2f(10, 3)
-    glEnd()
-
-    # PrintString("Esta area eh destinada a mensagens de texto. Veja a funcao DesenhaEm2D", 0, 8, White)
+    glEnd()    # PrintString("Esta area eh destinada a mensagens de texto. Veja a funcao DesenhaEm2D", 0, 8, White)
 
     PrintString("Gasolina", 0, 0, Orange)  # Orange
-    PrintString("100", 2, 0, Orange)  # Orange
+    PrintString(f"{Gasolina:.1f}", 2, 0, Orange)  # Mostra a quantidade atual de gasolina
     
     # Status do veículo
     status = "Movendo" if VeiculoEmMovimento else "Parado"
     PrintString(f"Veiculo: {status}", 0, 2, Orange)  # Orange
     PrintString("Espaco: Liga/Desliga movimento", 0, 1, Orange)  # Orange
+    PrintString("C: Alternar camera", 5, 1, Orange)  # Orange
 
     # Restaura os parâmetros que foram alterados
     glMatrixMode(GL_PROJECTION)
@@ -599,9 +601,7 @@ def keyboard(*args):
     # If escape is pressed, kill everything.
 
     if args[0] == ESCAPE:   # Termina o programa qdo
-        os._exit(0)         # a tecla ESC for pressionada
-
-    if args[0] == b't' :
+        os._exit(0)         # a tecla ESC for pressionada    if args[0] == b't' :
         ComTextura = 1 - ComTextura
 
     if args[0] == b' ':  # Barra de espaço
@@ -762,8 +762,19 @@ def AlternaMovimentoVeiculo():
 # Atualiza a posição do veículo se estiver em movimento
 # **********************************************************************
 def AtualizaMovimentoVeiculo():
+    global VeiculoEmMovimento, Gasolina
+    
     if VeiculoEmMovimento:
-        MoveVeiculo("frente")
+        # Verifica se há combustível suficiente
+        if Gasolina > 0:
+            # Consome combustível (taxa de consumo: 0.5 por frame de movimento)
+            Gasolina -= 0.05
+            if Gasolina < 0:
+                Gasolina = 0
+            MoveVeiculo("frente")
+        else:
+            # Para o veículo se não há mais combustível
+            VeiculoEmMovimento = False
 
 # ***********************************************************************************
 # Programa Principal
