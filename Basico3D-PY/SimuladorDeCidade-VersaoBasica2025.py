@@ -80,6 +80,7 @@ PosicaoVeiculo = Ponto()
 VeiculoX = 1.0  # Posição X do veículo no grid
 VeiculoZ = 1.0  # Posição Z do veículo no grid
 VeiculoAngulo = 0.0  # Ângulo de rotação do veículo (0=Norte, 90=Leste, 180=Sul, 270=Oeste)
+VeiculoDirecao = 0.0  # Direção de movimento (pode ser diferente da orientação visual)
 VelocidadeVeiculo = 0.1  # Velocidade de movimento
 VeiculoEmMovimento = False  # Controla se o veículo está se movendo automaticamente
 
@@ -673,26 +674,20 @@ def MoveVeiculo(direcao):
     else:
         nova_x, nova_z = VeiculoX, VeiculoZ
 
-    # Verifica se a nova posição é válida
     if VerificaPosicaoValida(nova_x, nova_z):
         VeiculoX = nova_x
         VeiculoZ = nova_z
         PosicaoVeiculo.x = VeiculoX
         PosicaoVeiculo.z = VeiculoZ
-        posiciona_em_terceira_pessoa()  # Atualiza a câmera
+        posiciona_em_terceira_pessoa()
 
-# **********************************************************************
-# RotacionaVeiculo()
-# Rotaciona o veículo para esquerda ou direita
-# **********************************************************************
 def RotacionaVeiculo(direcao):
     global VeiculoAngulo
-    
     if direcao == "esquerda":
         VeiculoAngulo = (VeiculoAngulo - 90) % 360
     elif direcao == "direita":
         VeiculoAngulo = (VeiculoAngulo + 90) % 360
-    posiciona_em_terceira_pessoa()  # <-- Atualiza a câmera
+    posiciona_em_terceira_pessoa()
 
 # **********************************************************************
 #  arrow_keys ( a_keys: int, x: int, y: int )   
