@@ -32,8 +32,11 @@ from ListaDeCoresRGB import *
 import Texture as TEX
 
 #from PIL import Image
+import math
 import time
 import random as ALE
+import sys
+import os
 
 import numpy as np
 from PIL import Image
@@ -75,6 +78,20 @@ Alvo = Ponto()
 TerceiraPessoa = Ponto()
 PosicaoVeiculo = Ponto()
 
+# Variáveis do veículo
+VeiculoX = 1.0  # Posição X do veículo no grid
+VeiculoZ = 1.0  # Posição Z do veículo no grid
+VeiculoAngulo = 0.0  # Ângulo de rotação do veículo (0=Norte, 90=Leste, 180=Sul, 270=Oeste)
+VeiculoDirecao = 0.0  # Direção de movimento (pode ser diferente da orientação visual)
+VelocidadeVeiculo = 0.1  # Velocidade de movimento
+VeiculoEmMovimento = False  # Controla se o veículo está se movendo automaticamente
+
+# Variável para controlar o modo de câmera
+ModoCameraPrimeiraPessoa = False  # False = terceira pessoa, True = primeira pessoa
+
+# Variável para controlar a quantidade de gasolina
+Gasolina = 100.0  # Quantidade inicial de gasolina
+
 ComTextura = 0
 
 
@@ -94,10 +111,8 @@ def ImprimeCidade():
 # a cidade
 # **********************************************************************
 def InicializaCidade(qtd_x, qtd_z):
-      LeMatrizCidade("cidade.txt")
-            #ImprimeCidade()
-    
-    #Cidade[2][19].cor_do_piso = Black
+    LeMatrizCidade("Cidade.txt")
+    #ImprimeCidade()
 
 def LeMatrizCidade(nome_arquivo):
     global Cidade, QtdX, QtdZ
@@ -116,24 +131,27 @@ def LeMatrizCidade(nome_arquivo):
                         ALE.uniform(0.5, 1.0),
                         ALE.uniform(0.5, 1.0)
                     )
-                    
-                    Cidade[i][j].altura = (valor - PREDIO)/2 + 2.0  # altura mínima 2.0, por exemplo
+                    if valor < 17:
+                        Cidade[i][j].altura = 0  # Sem prédio
+                    else:
+                        Cidade[i][j].altura = (valor - PREDIO) / 4 + 2.0 # altura mínima 2.0, por exemplo
+
                 elif valor == RUA:
                     Cidade[i][j].tipo = RUA
-                    Cidade[i][j].cor_do_piso = Black
+                    Cidade[i][j].cor_do_piso = (0, 0, 0)
                     Cidade[i][j].altura = 0
                 
                 elif valor == COMBUSTIVEL:
                     Cidade[i][j].tipo = COMBUSTIVEL
-                    Cidade[i][j].cor_do_piso = Yellow
-                    Cidade[i][j].altura = 0
+                    Cidade[i][j].cor_do_piso = (1, 1, 0)  # Amarelo
+                    Cidade[i][j].altura = 0.5
                 elif valor == VEICULO:
                     Cidade[i][j].tipo = VEICULO
-                    Cidade[i][j].cor_do_piso = Red
+                    Cidade[i][j].cor_do_piso = (1, 0, 0)
                     Cidade[i][j].altura = 0
                 else:
                     Cidade[i][j].tipo = VAZIO
-                    Cidade[i][j].cor_do_piso = White
+                    Cidade[i][j].cor_do_piso = (1, 1, 1)
                     Cidade[i][j].altura = 0
 
                     
@@ -146,9 +164,40 @@ def LeMatrizCidade(nome_arquivo):
 def posiciona_em_terceira_pessoa():
     global Observador, Alvo
     Observador = Ponto(TerceiraPessoa.x, TerceiraPessoa.y, TerceiraPessoa.z)  # Posiciona observador
-    Alvo = Ponto(PosicaoVeiculo.x, PosicaoVeiculo.y, PosicaoVeiculo.z)        # Define alvo como o veículo
+    Alvo = Ponto(PosicaoVeiculo.x, PosicaoVeiculo.y, PosicaoVeiculo.z)        # Define alvo como o veículo    Alvo.imprime("Posiciona - Veiculo:") 
 
-    Alvo.imprime("Posiciona - Veiculo:") 
+# **********************************************************************
+# def posiciona_em_primeira_pessoa():
+#   Este método posiciona o observador dentro do veículo, olhando na
+#   direção para onde o veículo está apontando
+# **********************************************************************
+def posiciona_em_primeira_pessoa():
+    global Observador, Alvo
+    
+    # Altura da câmera dentro do veículo
+    altura_camera = 0.5
+    
+    # Posição do observador (dentro do veículo)
+    Observador = Ponto(VeiculoX, altura_camera, VeiculoZ)
+    
+    # Calcula o ponto para onde a câmera deve olhar baseado na direção do veículo
+    ang_rad = math.radians(VeiculoAngulo)
+    distancia_alvo = 10.0  # Distância à frente do veículo para olhar
+    
+    alvo_x = VeiculoX + math.sin(ang_rad) * distancia_alvo
+    alvo_z = VeiculoZ - math.cos(ang_rad) * distancia_alvo
+    
+    Alvo = Ponto(alvo_x, altura_camera, alvo_z)
+
+# **********************************************************************
+# def posiciona_camera():
+#   Posiciona a câmera baseado no modo atual (primeira ou terceira pessoa)
+# **********************************************************************
+def posiciona_camera():
+    if ModoCameraPrimeiraPessoa:
+        posiciona_em_primeira_pessoa()
+    else:
+        posiciona_em_terceira_pessoa()
     
       
 # **********************************************************************
@@ -159,6 +208,7 @@ def init():
     global QtdX, QtdZ
     global TerceiraPessoa, PosicaoVeiculo
     global AnguloDeVisao
+    global VeiculoAngulo
 
     glClearColor(0.0, 0.0, 1.0, 1.0)  # Fundo de tela amarelo
     
@@ -179,15 +229,27 @@ def init():
     QtdX = 20
     QtdZ = 20
 
-    InicializaCidade(QtdX, QtdZ)
-
-    # ImprimeCidade()
+    InicializaCidade(QtdX, QtdZ)    # ImprimeCidade()
 
     # Define a posição do observador e do veículo com base no tamanho do mapa
     TerceiraPessoa = Ponto(QtdX / 2, 10, QtdZ * 1.1)
     PosicaoVeiculo = Ponto(QtdX / 2, 0, QtdZ / 2)
 
-    posiciona_em_terceira_pessoa()
+    # Inicializa a posição do veículo em uma rua válida
+    # Procura uma posição inicial válida (rua)
+    for i in range(QtdZ):
+        for j in range(QtdX):
+            if Cidade[i][j].tipo == RUA:
+                VeiculoX = j + 0.5  # Centro da célula
+                VeiculoZ = i + 0.5  # Centro da célula
+                VeiculoAngulo = 0.0  # Olhando para o norte                PosicaoVeiculo.x = VeiculoX
+                PosicaoVeiculo.z = VeiculoZ
+                break
+        else:
+            continue
+        break
+
+    posiciona_camera()
 
     TEX.LoadTexture("bricks.jpg") # esta serah a textura 0
     TEX.LoadTexture("Piso.jpg")   # esta serah a textura 1
@@ -290,6 +352,11 @@ def DesenhaCidade(QtdX, QtdZ):
             celula = Cidade[z][x]
             if celula.tipo == RUA:
                 DesenhaLadrilhoTEX(2)  # Usa a textura de rua (ajuste o índice se necessário)
+            elif celula.tipo == COMBUSTIVEL:
+                DesenhaLadrilhoTEX(2)
+                glPushMatrix()
+                DesenhaPredio(celula.altura, celula.cor_do_piso)
+                glPopMatrix()
             else:
                 DesenhaLadrilhoTEX(1)
                 if celula.tipo == PREDIO:
@@ -334,7 +401,7 @@ def DefineLuz():
     # Define a reflectancia do material
     glMaterialfv(GL_FRONT,GL_SPECULAR, Especularidade)
 
-    # Define a concentraÃ§Ã£oo do brilho.
+    # Define a concentraÃ§Ã£o do brilho.
     # Quanto maior o valor do Segundo parametro, mais
     # concentrado sera o brilho. (Valores validos: de 0 a 128)
     glMateriali(GL_FRONT,GL_SHININESS,51)
@@ -440,17 +507,30 @@ def DesenhaEm2D():
 
     # Desenha linha que divide as áreas 2D e 3D
     defineCor(GreenCopper)
-    glLineWidth(15)
+    glLineWidth(10)
     glBegin(GL_LINES)
-    glVertex2f(0, 10)
-    glVertex2f(10, 10)
-    glEnd()
+    glVertex2f(0, 3)
+    glVertex2f(10, 3)
+    glEnd()    # PrintString("Esta area eh destinada a mensagens de texto. Veja a funcao DesenhaEm2D", 0, 8, White)
 
-    PrintString("Esta area eh destinada a mensagens de texto. Veja a funcao DesenhaEm2D", 0, 8, White)
-
-    PrintString("Amarelo", 0, 0, Yellow)
-    PrintString("Vermelho", 4, 2, Red)
-    PrintString("Verde", 5, 4, Green)
+    PrintString("Gasolina", 0, 0, Orange)  # Orange
+    PrintString(f"{Gasolina:.1f}", 2, 0, Orange)  # Mostra a quantidade atual de gasolina
+      # Status do veículo
+    status = "Movendo" if VeiculoEmMovimento else "Parado"
+    if Gasolina <= 0:
+        status = "Sem combustivel"
+    PrintString(f"Veiculo: {status}", 0, 2, Orange)  # Orange
+    
+    # Verifica se está em posto de combustível
+    #pos_x = int(VeiculoX)
+    #pos_z = int(VeiculoZ)
+    #if pos_x >= 0 and pos_x < QtdX and pos_z >= 0 and pos_z < QtdZ:
+    #    if Cidade[pos_z][pos_x].tipo == COMBUSTIVEL:
+    #        PrintString("Em posto de gasolina", 5, 2, Orange)
+    
+    # Instruções
+    PrintString("Espaco: Liga/Desliga movimento", 0, 1, Orange)  # Orange
+    PrintString("C: Alternar camera", 5, 1, Orange)  # Orange
 
     # Restaura os parâmetros que foram alterados
     glMatrixMode(GL_PROJECTION)
@@ -479,11 +559,14 @@ def display():
 
     DefineLuz()
     PosicUser()
-
-    glMatrixMode(GL_MODELVIEW) 
-   
+    glMatrixMode(GL_MODELVIEW)
+    
     glPushMatrix()
     DesenhaCidade(QtdX,QtdZ)
+    glPopMatrix()
+
+    glPushMatrix()
+    DesenhaVeiculo()
     glPopMatrix()
 
     glPushMatrix()
@@ -520,6 +603,7 @@ def animate():
     
     if AccumDeltaT > 1.0/30:  # fixa a atualizacao da tela em 30
         AccumDeltaT = 0
+        AtualizaMovimentoVeiculo()  # Atualiza o movimento do veículo
         glutPostRedisplay()
 
 
@@ -529,7 +613,7 @@ def animate():
 # **********************************************************************
 ESCAPE = b'\x1b'
 def keyboard(*args):
-    global image, ComTextura
+    global image, ComTextura, ModoCameraPrimeiraPessoa
     #print (args)
     # If escape is pressed, kill everything.
 
@@ -539,22 +623,144 @@ def keyboard(*args):
     if args[0] == b't' :
         ComTextura = 1 - ComTextura
 
+    if args[0] == b' ':  # Barra de espaço
+        AlternaMovimentoVeiculo()
+
+    if args[0] == b'c':  # Tecla 'c' para alternar modo de câmera
+        ModoCameraPrimeiraPessoa = not ModoCameraPrimeiraPessoa
+        posiciona_camera()
+
     # ForÃ§a o redesenho da tela
     glutPostRedisplay()
+
+# **********************************************************************
+# VerificaPosicaoValida()
+# Verifica se uma posição é válida para o veículo (deve ser rua)
+# **********************************************************************
+def VerificaPosicaoValida(x, z):
+    # Verifica se está dentro dos limites do mapa
+    if x < 0 or x >= QtdX or z < 0 or z >= QtdZ:
+        return False
+    
+    # Verifica se a posição é uma rua ou uma célula de combustível
+    return Cidade[int(z)][int(x)].tipo == RUA or Cidade[int(z)][int(x)].tipo == COMBUSTIVEL
+
+# **********************************************************************
+# DesenhaVeiculo()
+# Desenha o veículo como um triângulo
+# **********************************************************************
+def DesenhaVeiculo():
+    glPushMatrix()
+    glTranslatef(VeiculoX, 0.1, VeiculoZ)  # Altura 0.1 para ficar acima do chão
+    glRotatef(VeiculoAngulo, 0, 1, 0)
+    glColor3f(1.0, 0.0, 0.0)  # Vermelho
+
+    # Corpo da seta (base do prisma)
+    glBegin(GL_QUADS)
+    # Base inferior
+    glVertex3f(-0.1, 0.0, -0.15)
+    glVertex3f( 0.1, 0.0, -0.15)
+    glVertex3f( 0.1, 0.0,  0.15)
+    glVertex3f(-0.1, 0.0,  0.15)
+    # Base superior
+    glVertex3f(-0.1, 0.1, -0.15)
+    glVertex3f( 0.1, 0.1, -0.15)
+    glVertex3f( 0.1, 0.1,  0.15)
+    glVertex3f(-0.1, 0.1,  0.15)
+    # Lados
+    glVertex3f(-0.1, 0.0, -0.15)
+    glVertex3f(-0.1, 0.1, -0.15)
+    glVertex3f(-0.1, 0.1,  0.15)
+    glVertex3f(-0.1, 0.0,  0.15)
+
+    glVertex3f(0.1, 0.0, -0.15)
+    glVertex3f(0.1, 0.1, -0.15)
+    glVertex3f(0.1, 0.1,  0.15)
+    glVertex3f(0.1, 0.0,  0.15)
+
+    glVertex3f(-0.1, 0.0, -0.15)
+    glVertex3f( 0.1, 0.0, -0.15)
+    glVertex3f( 0.1, 0.1, -0.15)
+    glVertex3f(-0.1, 0.1, -0.15)
+
+    glVertex3f(-0.1, 0.0, 0.15)
+    glVertex3f( 0.1, 0.0, 0.15)
+    glVertex3f( 0.1, 0.1, 0.15)
+    glVertex3f(-0.1, 0.1, 0.15)
+    glEnd()
+
+    # Ponta da seta (pirâmide)
+    glBegin(GL_TRIANGLES)
+    # Frente
+    glVertex3f( 0.0, 0.15, 0.35)  # ponta superior
+    glVertex3f(-0.15, 0.0, 0.15)
+    glVertex3f( 0.15, 0.0, 0.15)
+    # Lado esquerdo
+    glVertex3f( 0.0, 0.15, 0.35)
+    glVertex3f(-0.1, 0.0, -0.15)
+    glVertex3f(-0.15, 0.0, 0.15)
+    # Lado direito
+    glVertex3f( 0.0, 0.15, 0.35)
+    glVertex3f( 0.1, 0.0, -0.15)
+    glVertex3f( 0.15, 0.0, 0.15)
+    # Base traseira
+    glVertex3f( 0.0, 0.15, 0.35)
+    glVertex3f(-0.1, 0.0, -0.15)
+    glVertex3f( 0.1, 0.0, -0.15)
+    glEnd()
+
+    glPopMatrix()
+
+# **********************************************************************
+# MoveVeiculo()
+# Move o veículo na direção atual se a posição for válida
+# **********************************************************************
+def MoveVeiculo(direcao):
+    global VeiculoX, VeiculoZ, VeiculoAngulo
+
+    ang_rad = math.radians(VeiculoAngulo)
+    dx = math.sin(ang_rad)
+    dz = -math.cos(ang_rad)
+
+    if direcao == "frente":
+        nova_x = VeiculoX + dx * VelocidadeVeiculo
+        nova_z = VeiculoZ + dz * VelocidadeVeiculo
+    elif direcao == "tras":
+        nova_x = VeiculoX - dx * VelocidadeVeiculo
+        nova_z = VeiculoZ - dz * VelocidadeVeiculo
+    else:
+        nova_x, nova_z = VeiculoX, VeiculoZ
+
+    if VerificaPosicaoValida(nova_x, nova_z):
+        VeiculoX = nova_x
+        VeiculoZ = nova_z
+        PosicaoVeiculo.x = VeiculoX
+        PosicaoVeiculo.z = VeiculoZ
+        posiciona_camera()
+        # Verifica se está em posto de combustível e reabastece automaticamente
+        VerificaEReabastece()
+
+def RotacionaVeiculo(direcao):
+    global VeiculoAngulo
+    if direcao == "esquerda":
+        VeiculoAngulo = (VeiculoAngulo - 90) % 360
+    elif direcao == "direita":
+        VeiculoAngulo = (VeiculoAngulo + 90) % 360
+    posiciona_camera()
 
 # **********************************************************************
 #  arrow_keys ( a_keys: int, x: int, y: int )   
 # **********************************************************************
 
 def arrow_keys(a_keys: int, x: int, y: int):
-    if a_keys == GLUT_KEY_UP:         # Se pressionar UP
-        pass
-    if a_keys == GLUT_KEY_DOWN:       # Se pressionar DOWN
-        pass
+    #if a_keys == GLUT_KEY_UP:         # Se pressionar UP
+    #    MoveVeiculo("frente")
+    #if a_keys == GLUT_KEY_DOWN:       # Se pressionar DOWN
+    #    MoveVeiculo("tras")
     if a_keys == GLUT_KEY_LEFT:       # Se pressionar LEFT
-        pass
+        RotacionaVeiculo("esquerda")
     if a_keys == GLUT_KEY_RIGHT:      # Se pressionar RIGHT
-        pass
+        RotacionaVeiculo("direita")
 
     glutPostRedisplay()
 
@@ -563,6 +769,54 @@ def mouse(button: int, state: int, x: int, y: int):
 
 def mouseMove(x: int, y: int):
     glutPostRedisplay()
+
+# **********************************************************************
+# AlternaMovimentoVeiculo()
+# Liga/desliga o movimento automático do veículo
+# **********************************************************************
+def AlternaMovimentoVeiculo():
+    global VeiculoEmMovimento
+    # Só permite ligar o movimento se houver combustível
+    if not VeiculoEmMovimento and Gasolina <= 0:
+        print("Sem combustível! Procure um posto de gasolina.")
+        return
+    VeiculoEmMovimento = not VeiculoEmMovimento
+
+# **********************************************************************
+# AtualizaMovimentoVeiculo()
+# Atualiza a posição do veículo se estiver em movimento
+# **********************************************************************
+def AtualizaMovimentoVeiculo():
+    global VeiculoEmMovimento, Gasolina
+    
+    if VeiculoEmMovimento:
+        # Verifica se há combustível suficiente
+        if Gasolina > 0:
+            # Consome combustível (taxa de consumo: 0.5 por frame de movimento)
+            Gasolina -= 0.05
+            if Gasolina < 0:
+                Gasolina = 0
+            MoveVeiculo("frente")
+        else:
+            # Para o veículo se não há mais combustível
+            VeiculoEmMovimento = False
+
+# **********************************************************************
+# VerificaEReabastece()
+# Verifica se o veículo está em uma célula de combustível e reabastece automaticamente
+# **********************************************************************
+def VerificaEReabastece():
+    global Gasolina
+    # Verifica a célula atual do veículo
+    pos_x = int(VeiculoX)
+    pos_z = int(VeiculoZ)
+    
+    # Verifica se está dentro dos limites do mapa
+    if pos_x >= 0 and pos_x < QtdX and pos_z >= 0 and pos_z < QtdZ:
+        if Cidade[pos_z][pos_x].tipo == COMBUSTIVEL:
+            if Gasolina < 100.0:  # Só reabastece se não estiver cheio
+                Gasolina = 100.0  # Reabastece completamente
+                print("Veículo reabastecido automaticamente!")
 
 # ***********************************************************************************
 # Programa Principal
